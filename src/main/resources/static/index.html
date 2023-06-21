@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <style>
+    .auto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(20ch, 100%), 1fr));
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8">Weather Forecast</h1>
+    <form id="weather-form" class="flex flex-col sm:flex-row gap-1 sm:gap-0 items-center">
+      <label class="inline sm:bg-gray-300 px-2 py-2 sm:border sm:border-r-0 sm:border-gray-300 sm:rounded-l-md"
+        for="city-input">City</label>
+      <input id="city-input"
+        class="border border-gray-300 px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64" type="text"
+        placeholder="Vicenza" required>
+      <button
+        class="inline-flex bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 sm:rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        type="submit">Get Forecast</button>
+    </form>
+    <div id="weather-results" class="hidden my-4">
+      <!-- Weather results will be rendered here -->
+    </div>
+    <!-- <div id="weather-results" class="my-4">
+      <h2 class="text-lg font-semibold">Forecasts for Vicenza - IT:</h2>
+      <div class="auto-grid gap-2">
+        <div
+          class="border border-gray-300 rounded-md p-4 mb-4 bg-white shadow flex flex-col items-center justify-center">
+          <h2>Tuesday, June 20</h2>
+          <p class="text-gray-600">5:00 PM</p>
+          <p class="text-3xl font-semibold">30.96 °C</p>
+          <img src="https://openweathermap.org/img/w/03d.png" alt="scattered clouds">
+        </div>
+        <div class="border border-gray-300 rounded-md p-4 mb-4">
+          <h2>Tuesday, June 20</h2>
+          <p class="text-gray-600">8:00 PM</p>
+          <p class="text-blue-600">broken clouds</p>
+          <p class="text-3xl font-semibold">28.65 °C</p>
+          <img src="https://openweathermap.org/img/w/04d.png" alt="broken clouds">
+        </div>
+      </div>
+    </div> -->
+  </div>
+
+  <script>
+    'use strict';
+
+    // Read current user's locale
+    const userLocale =
+      navigator.languages && navigator.languages.length
+        ? navigator.languages[0]
+        : navigator.language;
+
+    console.log(`User locale ${userLocale}`);
+
+    /**
+     * Function to fetch weather data from the backend API.
+     * 
+     * @param {string} city - City entered by the user.
+     */
+    async function fetchWeatherData(city) {
+
+      const { origin } = window.location;
+
+      // API that returns the weather forecasts
+      const apiUrl = `${origin}/weather/${city}`;
+
+      // Weather API call
+      try {
+        const response = await fetch(apiUrl);
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          // TODO: better error management
+          throw new Error('Failed to fetch weather data');
+        }
+      } catch (error) {
+        // TODO: better error management
+        throw new Error('Failed to fetch weather data');
+      }
+    }
+
+    // Function that renders weather forecast
+    function renderWeatherForecast(forecastData) {
+      const weatherResults = document.getElementById('weather-results');
+      weatherResults.innerHTML = ''; // Clear previous results
+
+      const header = document.createElement('h2');
+      header.innerText = `Forecasts for ${forecastData.city.displayName}:`;
+      header.className = 'text-lg font-semibold mb-4';
+      weatherResults.appendChild(header);
+
+      const autoGridContainer = document.createElement('div');
+      autoGridContainer.className = 'auto-grid gap-4';
+      weatherResults.appendChild(autoGridContainer);
+
+      forecastData.forecasts.forEach((forecast) => {
+        const forecastDate = new Date(forecast.timestamp);
+        const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+        const dateText = forecastDate.toLocaleDateString(userLocale, dateOptions);
+        const timeText = forecastDate.toLocaleTimeString(userLocale, { hour: 'numeric', minute: 'numeric' });
+
+        const forecastCard = document.createElement('div');
+        forecastCard.classList.add('border', 'border-gray-300', 'rounded-md', 'p-4', 'bg-white', 'shadow', 'flex', 'flex-col', 'items-center', 'justify-center');
+        forecastCard.innerHTML = `
+        <h3>${dateText}</h2>
+        <p class="text-gray-600">${timeText}</p>
+        <p class="text-3xl font-semibold">${forecast.avgTemperature} °C</p>
+        <img src="https://openweathermap.org/img/w/${forecast.weatherIcon}.png" alt="${forecast.weatherDescription}" />
+        `;
+        autoGridContainer.appendChild(forecastCard);
+      });
+
+      weatherResults.classList.remove('hidden');
+    }
+
+    // Event listener for form submission
+    document.getElementById('weather-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const cityInput = document.getElementById('city-input');
+      const city = cityInput.value.trim();
+
+      try {
+        const weatherData = await fetchWeatherData(city);
+        renderWeatherForecast(weatherData);
+      } catch (error) {
+        // TODO: better error management
+        alert('Failed to fetch weather data. Please try again.');
+      }
+    });
+  </script>
+</body>
+
+</html>
